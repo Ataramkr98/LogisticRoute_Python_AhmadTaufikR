@@ -1,0 +1,7 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon, back_link %}
+{% block title %}Create order{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-4xl"><header class="page-header"><div>{{ back_link(url('order-list'), 'Orders') }}<h1 class="page-title">Create order</h1><p class="page-description">Capture demand, service requirements, and the delivery promise.</p></div></header>
+<form method="post" class="panel p-5 sm:p-6">{{ csrf_input }}{{ form.as_p()|safe }}<div class="mt-6 flex flex-wrap justify-end gap-2 border-t pt-5" style="border-color: var(--line);"><a class="btn-secondary" href="{{ url('order-list') }}">Cancel</a><button class="btn-primary" type="submit">{{ icon('circle-plus') }}Create order</button></div></form></div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% from "components/ui.html" import icon, flash_messages %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071827">
+  <title>{% block title %}Driver{% endblock %} · RouteOps</title>
+  <link rel="icon" href="{{ static('favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ static('build/app.css') }}">
+  <script src="{{ static('build/app.js') }}" defer></script>
+</head>
+<body class="driver-shell" data-driver-shell>
+  <header class="driver-topbar">
+    <div class="mx-auto flex max-w-lg items-center justify-between gap-4">
+      <a href="{{ url('driver-today') }}" class="brand text-lg">Route<span class="brand-accent">Ops</span><span class="ml-2 text-xs font-semibold tracking-normal text-slate-300">Driver</span></a>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-300">{{ icon('wifi', 'text-base') }}<span data-online-label>Online</span></span>
+        <form method="post" action="{{ url('logout') }}" data-driver-logout>{{ csrf_input }}<button type="submit" class="topbar-icon h-9 w-9" aria-label="Sign out">{{ icon('logout') }}</button></form>
+      </div>
+    </div>
+  </header>
+  <main class="mx-auto max-w-lg px-4 py-5 pb-28">
+    {{ csrf_input }}
+    <div data-driver-sync-message hidden class="notice notice-warning mb-4" role="alert"></div>
+    {% if messages %}{{ flash_messages(messages) }}{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <nav class="driver-bottom-nav" aria-label="Driver navigation">
+    <div class="mx-auto flex max-w-lg gap-2">
+      <a href="{{ url('driver-today') }}" class="driver-nav-link {{ 'is-active' if request.path == '/driver/today/' or request.path.startswith('/driver/route/') or request.path.startswith('/driver/stop/') or request.path.startswith('/driver/pod/') else '' }}" {{ 'aria-current="page"'|safe if request.path == '/driver/today/' or request.path.startswith('/driver/route/') or request.path.startswith('/driver/stop/') or request.path.startswith('/driver/pod/') else '' }}>{{ icon('route') }}<span>Today</span></a>
+      <a href="{{ url('driver-history') }}" class="driver-nav-link {{ 'is-active' if request.path == '/driver/history/' else '' }}" {{ 'aria-current="page"'|safe if request.path == '/driver/history/' else '' }}>{{ icon('history') }}<span>History</span></a>
+    </div>
+  </nav>
+</body>
+</html>

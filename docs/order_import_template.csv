@@ -1,0 +1,3 @@
+external_ref,service_date,customer_external_ref,customer_name,address_line1,address_line2,city,region,postal_code,country_code,order_type,priority,time_window_start,time_window_end,service_duration_seconds,demand_weight_kg,demand_volume_m3,package_count,required_skills,special_instructions
+ORD-EXAMPLE-001,2026-07-23,CUST-001,Example Market,Jl. Senopati No. 12,,Jakarta,DKI Jakarta,12190,ID,DELIVERY,2,2026-07-23T08:00:00+07:00,2026-07-23T11:00:00+07:00,600,45.5,0.35,4,STANDARD,Call before arrival
+

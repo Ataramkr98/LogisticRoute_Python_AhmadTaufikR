@@ -1,0 +1,7 @@
+{% extends "layouts/driver.html" %}
+{% from "components/ui.html" import icon, back_link %}
+{% block title %}Route history{% endblock %}
+{% block content %}
+<header class="mb-5">{{ back_link(url('driver-today'), 'Today') }}<h1 class="page-title">Route history</h1><p class="page-description">Completed and cancelled assignments.</p></header>
+<div class="space-y-3">{% for route in routes %}<a class="panel flex items-center gap-4 p-4" href="{{ url('driver-route-page', kwargs={'route_id': route.pk}) }}"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xl text-slate-700">{{ icon('route') }}</span><div class="min-w-0 flex-1"><div class="flex items-center justify-between gap-2"><strong>Route #{{ route.pk }}</strong><span class="status status-{{ route.status }}">{{ route.status }}</span></div><p class="mt-2 text-sm text-slate-500">{{ route.route_plan.service_date }} · {{ route.vehicle.code }} · {{ (route.total_distance_m / 1000)|round(1) }} km</p></div>{{ icon('chevron-right', 'text-lg text-slate-400') }}</a>{% else %}<section class="panel"><div class="empty-state">{{ icon('history', 'empty-state-icon') }}<h2>No route history</h2><p>Completed assignments will appear here.</p></div></section>{% endfor %}</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div>
+    <p class="page-eyebrow">Performance</p>
+    <h1 class="page-title">Reports</h1>
+    <p class="page-description">Auditable KPI exports for order statuses, planned distance and duration.</p>
+  </div>
+</header>
+<div class="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
+  <section class="panel p-6">
+    <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-50 text-2xl text-emerald-700">{{ icon('file-spreadsheet') }}</span>
+    <h2 class="panel-title mt-5">Create KPI export</h2>
+    <p class="mt-2 text-sm leading-6 text-slate-500">
+      Generates a CSV summarising order statuses, planned distance and planned duration for the
+      selected period. Exports run in the background and are listed on the right.
+    </p>
+    <form method="post" class="mt-5 space-y-4">{{ csrf_input }}
+      {% for field in form %}
+        <div>
+          <label class="label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="mt-1 text-xs font-semibold" style="color: var(--danger);" role="alert">{{ error }}</p>{% endfor %}
+        </div>
+      {% endfor %}
+      {# Called, not referenced: non_field_errors is a method on a Django form,
+         and iterating the bound method raises TypeError. #}
+      {% for error in form.non_field_errors() %}<p class="text-xs font-semibold" style="color: var(--danger);" role="alert">{{ error }}</p>{% endfor %}
+      <button class="btn-primary w-full" type="submit">{{ icon('file-plus') }}Generate export</button>
+    </form>
+  </section>
+  <section class="panel overflow-hidden">
+    <div class="panel-header">
+      <div><h2 class="panel-title">Recent exports</h2><p class="panel-subtitle">Generated files and their processing state</p></div>
+      {{ icon('history', 'text-xl text-slate-400') }}
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table">
+        <thead><tr><th>Report</th><th>Status</th><th>Period</th><th>Requested</th><th>File</th></tr></thead>
+        <tbody>
+          {% for item in exports %}
+          <tr>
+            <td class="font-semibold">{{ item.report_type.replace('_', ' ').title() }}</td>
+            <td>
+              <span class="status status-{{ item.status }}">{{ item.status.replace('_', ' ').title() }}</span>
+              {% if item.error_message %}<p class="mt-1 max-w-[22rem] text-xs" style="color: var(--danger);">{{ item.error_message|truncate(180) }}</p>{% endif %}
+            </td>
+            <td class="text-xs text-slate-500">{{ item.filters_json.get('date_from', '—') }} → {{ item.filters_json.get('date_to', '—') }}</td>
+            <td class="text-xs text-slate-500">{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              {% if item.output_file %}
+                <a class="table-link" href="{{ url('private-media', kwargs={'file_path': item.output_file.name}) }}">{{ icon('download') }}Download CSV</a>
+              {% else %}
+                <span class="text-xs text-slate-400">Not ready</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="!py-12 text-center text-slate-500">{{ icon('file-off', 'mb-2 block text-3xl') }}No exports created yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

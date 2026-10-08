@@ -1,0 +1,14 @@
+{% extends "layouts/error.html" %}
+{% block title %}Bad request{% endblock %}
+{% block guidance %}
+<div class="notice notice-warning mt-6">
+  <i class="ti ti-alert-triangle text-lg mt-0.5" aria-hidden="true"></i>
+  <div>
+    <p class="font-semibold">The request could not be understood.</p>
+    <p class="mt-1 font-normal">
+      This usually means a form was submitted from an expired page, or that a
+      security token was missing. Reload the page and try again.
+    </p>
+  </div>
+</div>
+{% endblock %}

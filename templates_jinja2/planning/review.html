@@ -1,0 +1,29 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Review route plan{% endblock %}
+{% block content %}
+<header class="page-header">
+  <div><p class="page-eyebrow">Plan v{{ plan.plan_version }}</p><div class="flex flex-wrap items-center gap-3"><h1 class="page-title">Review optimized routes</h1><span class="status status-{{ plan.status }}">{{ plan.status }}</span></div><p class="page-description">{{ plan.service_date }} · {{ plan.depot.code }} · Run #{{ plan.planning_run_id }}</p></div>
+  <form method="post" class="page-actions">{{ csrf_input }}<button type="submit" class="btn-secondary" name="validate" value="1">{{ icon('shield-check') }}Validate plan</button><button type="submit" class="btn-primary" name="dispatch" value="1" {{ 'disabled' if not plan.routes.exists() else '' }}>{{ icon('send') }}Dispatch routes</button></form>
+</header>
+<section class="grid gap-px border sm:grid-cols-2 lg:grid-cols-6" style="border-color: var(--line); background: var(--line); border-radius: 8px; overflow: hidden;">
+  {% set summary = [('Score', plan.planning_run.objective_score or '—'), ('Distance', ((plan.planning_run.total_distance_m / 1000)|round(1)) ~ ' km'), ('Duration', ((plan.planning_run.total_duration_s / 3600)|round(1)) ~ ' h'), ('Vehicles', plan.planning_run.vehicles_used), ('Unassigned', plan.planning_run.unassigned_count), ('Solver', plan.planning_run.metrics_json.get('solver_status','—'))] %}
+  {% for label, value in summary %}<div class="bg-white p-4"><p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ label }}</p><p class="mt-2 text-xl font-extrabold">{{ value }}</p></div>{% endfor %}
+</section>
+<div class="mt-5 grid min-h-[42rem] gap-5 xl:grid-cols-[1fr_1.4fr]" data-review-url="{{ url('planning-review', kwargs={'plan_id': plan.pk}) }}">
+  <div class="space-y-5">
+    <section class="panel overflow-hidden">
+      <div class="panel-header"><div><h2 class="panel-title">Routes</h2>{% if plan.status in ['DRAFT','OPTIMIZED','REVIEW'] %}<p class="panel-subtitle">Drag stops to reorder or move them between routes.</p>{% else %}<p class="panel-subtitle">This plan is {{ plan.status.replace('_',' ').lower() }} and can no longer be edited.</p>{% endif %}</div>{{ icon('arrows-move', 'text-xl text-slate-400') }}</div>
+      <div class="max-h-[36rem] divide-y overflow-auto" style="border-color: var(--line);">
+        {% for route in plan.routes.all() %}<article class="p-4"><div class="flex items-center justify-between gap-3"><a class="table-link" href="{{ url('route-detail', kwargs={'route_id': route.pk}) }}">{{ route.vehicle.code }}</a><span class="status status-{{ route.status }}">{{ route.status }}</span></div><p class="mt-1 text-xs text-slate-500">{{ route.driver.full_name if route.driver else 'Driver required' }} · {{ (route.total_distance_m / 1000)|round(1) }} km · {{ (route.total_duration_s / 3600)|round(1) }} h</p>
+          <ol class="mt-3 min-h-12 space-y-2 border bg-stone-50 p-2" style="border-color: var(--line); border-radius: 8px;" {% if plan.status in ['DRAFT','OPTIMIZED','REVIEW'] %}data-sortable-route="{{ route.pk }}"{% endif %}>
+            {% for stop in route.stops.all() if stop.order %}<li class="flex items-center gap-3 border bg-white p-3" style="border-color: var(--line); border-radius: 6px;" data-stop-id="{{ stop.pk }}" data-stop-version="{{ stop.version }}"><button type="button" data-drag-handle class="cursor-grab text-xl text-slate-400 active:cursor-grabbing" aria-label="Move stop {{ stop.sequence }}">{{ icon('grip-vertical') }}</button><span class="min-w-0 flex-1"><strong class="block truncate text-sm">{{ stop.order.external_ref }} · {{ stop.order.customer.name if stop.order.customer else 'Walk-in' }}</strong><span class="block truncate text-xs text-slate-500">{{ stop.order.delivery_address.one_line }}</span></span><span class="text-xs font-bold text-slate-400">{{ stop.sequence }}</span></li>{% else %}<li class="p-3 text-center text-xs text-slate-400">No customer stops</li>{% endfor %}
+          </ol></article>{% else %}<div class="empty-state">{{ icon('route-off', 'empty-state-icon') }}<h2>No feasible routes</h2><p>Review constraints and available resources.</p></div>{% endfor %}
+      </div>
+    </section>
+    {% if plan.unassigned_orders.count() %}<section class="panel overflow-hidden"><div class="panel-header"><h2 class="panel-title text-orange-800">Unassigned orders</h2><span class="status status-UNASSIGNED">{{ plan.unassigned_orders.count() }}</span></div><div class="divide-y" style="border-color: var(--line);">{% for item in plan.unassigned_orders.all() %}<div class="p-4"><p class="font-semibold">{{ item.order.external_ref }}</p><p class="mt-1 text-xs text-slate-500">{{ item.explanation }}</p></div>{% endfor %}</div></section>{% endif %}
+    {% if plan.violations.count() %}<section class="panel overflow-hidden"><div class="panel-header"><h2 class="panel-title text-red-800">Constraint violations</h2>{{ icon('alert-triangle', 'text-xl text-red-600') }}</div><div class="divide-y" style="border-color: var(--line);">{% for item in plan.violations.all() %}<div class="p-4"><p class="text-xs font-bold uppercase text-red-600">{{ item.constraint_type }}</p><p class="mt-1 text-sm">{{ item.message }}</p></div>{% endfor %}</div></section>{% endif %}
+  </div>
+  <section class="panel overflow-hidden"><div class="panel-header"><div><h2 class="panel-title">Route map</h2><p class="panel-subtitle">Road geometry and ordered stops</p></div>{{ icon('map-2', 'text-xl text-slate-400') }}</div><div id="planning-map-data" class="hidden">{{ route_features|tojson }}</div><div class="map-canvas min-h-[38rem]" data-route-map="planning-map-data" data-tile-url="{{ map_tile_url }}" data-attribution="{{ map_attribution|e }}"></div></section>
+</div>
+{% endblock %}

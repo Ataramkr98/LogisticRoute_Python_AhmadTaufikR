@@ -1,0 +1,33 @@
+{% extends "layouts/driver.html" %}
+{% from "components/ui.html" import icon, back_link %}
+{% block title %}Route #{{ route.pk }}{% endblock %}
+{% block content %}
+<header class="mb-5 flex items-start justify-between gap-3"><div>{{ back_link(url('driver-today'), 'Today') }}<h1 class="page-title">Route #{{ route.pk }}</h1><p class="page-description">{{ route.vehicle.code }} · {{ route.stops.count() - 2 }} customer stops</p></div><span class="status status-{{ route.status }}">{{ route.status.replace('_',' ') }}</span></header>
+{% set actionable = route.stops.filter(order__isnull=False).exclude(status__in=['COMPLETED','FAILED','SKIPPED']).first() %}
+{% if actionable %}<section class="mb-5 overflow-hidden border p-5 text-white" style="background: var(--success); border-color: #0c5739; border-radius: 8px;"><p class="text-xs font-bold uppercase tracking-widest text-emerald-100">Next stop · {{ actionable.planned_arrival_at.strftime('%H:%M') }}</p><h2 class="mt-2 text-2xl font-extrabold">{{ actionable.order.customer.name if actionable.order.customer else actionable.order.external_ref }}</h2><p class="mt-2 flex items-start gap-2 text-sm text-emerald-50">{{ icon('map-pin', 'mt-0.5 shrink-0') }}<span>{{ actionable.order.delivery_address.one_line }}</span></p><a class="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-white font-bold text-emerald-800" href="{{ url('driver-stop-page', kwargs={'stop_id': actionable.pk}) }}">{{ icon('arrow-right') }}Open stop</a></section>{% endif %}
+<section class="panel overflow-hidden"><div class="panel-header"><div><h2 class="panel-title">Route timeline</h2><p class="panel-subtitle">{{ (route.total_distance_m / 1000)|round(1) }} km planned</p></div>{{ icon('timeline', 'text-xl text-slate-400') }}</div><ol class="p-4">
+{% for stop in route.stops.all() %}
+<li class="timeline-line relative flex gap-3 pb-4">
+  <span class="relative z-10 flex h-9 w-9 flex-none items-center justify-center rounded-full border-4 border-white {{ 'bg-emerald-700 text-white' if stop.status == 'COMPLETED' else 'bg-blue-600 text-white' if stop.order else 'bg-slate-800 text-white' }} text-xs font-bold">{% if stop.status == 'COMPLETED' %}{{ icon('check', 'text-base') }}{% else %}{{ loop.index }}{% endif %}</span>
+  {# Depot and break stops have no stop page of their own. They used to render a
+     focusable link to `#`, so every non-delivery row looked tappable and jumped
+     to the top of the page. They are plain content now; only delivery stops
+     navigate. #}
+  <div class="min-w-0 flex-1 border {{ 'bg-emerald-50' if stop.pk == actionable.pk else 'bg-stone-50' }} p-3" style="border-color: var(--line); border-radius: 8px;">
+    {% if stop.order %}
+    <a href="{{ url('driver-stop-page', kwargs={'stop_id': stop.pk}) }}" class="block">
+      <div class="flex justify-between gap-2"><strong class="truncate">{{ stop.order.customer.name if stop.order.customer else stop.order.external_ref }}</strong><span class="text-xs font-bold text-slate-500">{{ stop.planned_arrival_at.strftime('%H:%M') }}</span></div>
+      <p class="mt-1 truncate text-xs text-slate-500">{{ stop.order.delivery_address.one_line }}</p>
+    </a>
+    {% else %}
+    <div>
+      <div class="flex justify-between gap-2"><strong class="truncate text-slate-700">{{ stop.get_stop_type_display() }}</strong><span class="text-xs font-bold text-slate-500">{{ stop.planned_arrival_at.strftime('%H:%M') }}</span></div>
+      <p class="mt-1 truncate text-xs text-slate-500">{{ route.route_plan.depot.address_text }}</p>
+    </div>
+    {% endif %}
+  </div>
+</li>
+{% endfor %}
+</ol></section>
+{% if route.status == 'DISPATCHED' %}<button class="btn-driver mt-5 bg-blue-600 text-white" type="button" data-driver-action data-event-type="ROUTE_STARTED" data-route-id="{{ route.pk }}" data-expected-version="{{ route.version }}">{{ icon('player-play', 'text-xl') }}Start route</button>{% endif %}
+{% endblock %}

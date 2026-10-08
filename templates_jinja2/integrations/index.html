@@ -1,0 +1,36 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Integrations{% endblock %}
+{% block content %}
+{# Rows and their status come from apps.common.web_views._integration_status,
+   which derives each state from settings and from rows that exist in the
+   database. Nothing here is hardcoded, so a provider can genuinely read as
+   "Not configured". #}
+<header class="page-header">
+  <div>
+    <p class="page-eyebrow">Connectivity</p>
+    <h1 class="page-title">Integrations</h1>
+    <p class="page-description">Live state of every external dependency this deployment uses.</p>
+  </div>
+  <div class="page-actions">
+    <a class="btn-primary" href="/api/docs/">{{ icon('api') }}Open API docs</a>
+    {% if request.user.is_staff %}
+    <a class="btn-secondary" href="/admin/integrations/webhooksubscription/">{{ icon('webhook') }}Manage webhooks</a>
+    {% endif %}
+  </div>
+</header>
+<section class="panel overflow-hidden">
+  <div class="divide-y" style="border-color: var(--line);">
+    {% for item in integrations %}
+    <article class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+      <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-2xl text-blue-700">{{ icon(item.icon) }}</span>
+      <div class="min-w-0 flex-1">
+        <h2 class="font-bold">{{ item.title }}</h2>
+        <p class="mt-1 text-sm text-slate-500">{{ item.description }}</p>
+      </div>
+      <span class="status status-{{ item.tone }} self-start sm:self-auto">{{ item.state }}</span>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

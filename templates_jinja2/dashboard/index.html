@@ -1,0 +1,141 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon, empty_state %}
+{% block title %}Command Center{% endblock %}
+{% block content %}
+<header class="page-header lg:items-center">
+  <div>
+    <h1 class="page-title">Command Center</h1>
+    <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+      <span class="inline-flex items-center gap-2">{{ icon('calendar', 'text-base') }}{{ today.strftime('%A, %d %B %Y') }}</span>
+      <span>All times in {{ current_organization.timezone or 'local time' }}</span>
+    </p>
+  </div>
+  <div class="page-actions">
+    <a class="btn-secondary" href="{{ url('order-import') }}">{{ icon('file-upload') }}<span>Import orders</span></a>
+    <a class="btn-primary" href="{{ url('planning-new') }}">{{ icon('circle-plus') }}<span>Create route plan</span></a>
+  </div>
+</header>
+
+<section class="metric-strip mb-6" aria-label="Daily operational summary">
+  <article class="metric-item"><span class="metric-icon">{{ icon('route') }}</span><div><p class="metric-value">{{ routes|length }}</p><p class="metric-label">Active routes</p></div></article>
+  <article class="metric-item"><span class="metric-icon">{{ icon('package') }}</span><div><p class="metric-value">{{ kpis[0][1] }}</p><p class="metric-label">Orders today</p></div></article>
+  <article class="metric-item"><span class="metric-icon">{{ icon('truck-delivery') }}</span><div><p class="metric-value">{{ kpis[3][1] }}</p><p class="metric-label">In progress</p></div></article>
+  <article class="metric-item"><span class="metric-icon">{{ icon('road') }}</span><div><p class="metric-value">{{ planned_distance_km }} km</p><p class="metric-label">Planned distance</p></div></article>
+</section>
+
+<div class="grid gap-4 xl:grid-cols-[1.58fr_1fr]">
+  <section class="panel overflow-hidden">
+    <div class="panel-header">
+      <div><h2 class="panel-title">Route progress</h2><p class="panel-subtitle">Today's assigned vehicles and completed stops</p></div>
+      <a class="section-link" href="{{ url('route-list') }}">View all routes {{ icon('chevron-right') }}</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="data-table min-w-[720px]">
+        <thead><tr><th>Route</th><th>Driver</th><th>Vehicle</th><th>Status</th><th>Stops</th><th>Progress</th><th>Distance</th><th><span class="sr-only">Open</span></th></tr></thead>
+        <tbody>
+          {% for route in routes %}
+          <tr>
+            <td><a class="table-link" href="{{ url('route-detail', kwargs={'route_id': route.pk}) }}">#{{ route.pk }}</a></td>
+            <td>{{ route.driver.full_name if route.driver else 'Unassigned' }}</td>
+            <td><span class="font-semibold">{{ route.vehicle.code }}</span><p class="text-xs text-slate-400">{{ route.vehicle.plate_number }}</p></td>
+            <td><span class="status status-{{ route.status }}">{{ route.status.replace('_',' ') }}</span></td>
+            <td class="tabular-nums">{{ route.completed_stop_count }} / {{ route.customer_stop_count }}</td>
+            <td><div class="flex items-center gap-2"><div class="progress-track"><div class="progress-bar" style="width: {{ route.progress_percent }}%"></div></div><span class="w-9 text-right text-xs font-semibold tabular-nums">{{ route.progress_percent }}%</span></div></td>
+            <td class="whitespace-nowrap tabular-nums">{{ (route.total_distance_m / 1000)|round(1) }} km</td>
+            <td><a class="icon-btn h-8 w-8 border-0" href="{{ url('route-detail', kwargs={'route_id': route.pk}) }}" aria-label="Open route {{ route.pk }}">{{ icon('chevron-right') }}</a></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="8">{{ empty_state('route-off', 'No active routes', 'Create a route plan to begin today’s operation.') }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel overflow-hidden">
+    <div class="panel-header"><div><h2 class="panel-title">Live operations map</h2><p class="panel-subtitle">Routes and latest vehicle positions</p></div><a class="section-link" href="{{ url('live-map') }}">Full map {{ icon('maximize') }}</a></div>
+    <div class="map-canvas !min-h-[22rem]" data-live-map data-tile-url="{{ map_tile_url }}" data-attribution="{{ map_attribution|e }}"></div>
+  </section>
+</div>
+
+<div class="mt-4 grid gap-4 xl:grid-cols-[1.58fr_1fr]">
+  <section class="panel overflow-hidden">
+    <div class="panel-header"><div class="flex items-center gap-2"><h2 class="panel-title">Exceptions</h2>{% if exceptions %}<span class="rounded bg-orange-600 px-1.5 py-0.5 text-[10px] font-bold text-white">{{ exceptions|length }}</span>{% endif %}</div><a class="section-link" href="{{ url('exceptions') }}">View all exceptions {{ icon('chevron-right') }}</a></div>
+    <div class="overflow-x-auto">
+      <table class="data-table min-w-[640px]">
+        <thead><tr><th>Reported</th><th>Severity</th><th>Type</th><th>Message</th><th>Reference</th></tr></thead>
+        <tbody>{% for item in exceptions %}<tr><td class="whitespace-nowrap text-xs tabular-nums">{{ item.created_at.strftime('%H:%M') }}</td><td><span class="inline-flex items-center gap-2 font-semibold {{ 'text-red-600' if item.severity in ['HIGH','CRITICAL'] else 'text-orange-600' }}">{{ icon('alert-circle', 'text-base') }}{{ item.severity.title() }}</span></td><td class="font-semibold">{{ item.type.replace('_',' ').title() }}</td><td class="max-w-md truncate">{{ item.description }}</td><td>{% if item.route %}Route #{{ item.route_id }}{% elif item.order %}{{ item.order.external_ref }}{% else %}—{% endif %}</td></tr>{% else %}<tr><td colspan="5">{{ empty_state('shield-check', 'No open exceptions', 'The operational queue is clear.') }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel overflow-hidden">
+    <div class="panel-header"><div><h2 class="panel-title">Fleet readiness</h2><p class="panel-subtitle">Active vehicle availability</p></div><a class="section-link" href="{{ url('vehicle-list') }}">View fleet {{ icon('chevron-right') }}</a></div>
+    <div class="divide-y" style="border-color: var(--line);">
+      <div class="flex items-center justify-between px-5 py-4"><span class="inline-flex items-center gap-2 font-semibold">{{ icon('truck', 'text-lg') }}Total vehicles</span><strong class="tabular-nums">{{ vehicle_total }}</strong></div>
+      {% for label, value, state in fleet_readiness %}<div class="flex items-center justify-between px-5 py-3 text-sm"><span>{{ label }}</span><div class="flex items-center gap-3"><strong class="tabular-nums">{{ value }}</strong><span class="status status-{{ state }}">{{ ((value / vehicle_total) * 100)|round(1) if vehicle_total else 0 }}%</span></div></div>{% endfor %}
+    </div>
+    <div class="border-t px-5 py-4" style="border-color: var(--line);"><div class="flex items-center justify-between text-sm"><span class="font-semibold">Utilization</span><strong class="tabular-nums">{{ fleet_utilization }}%</strong></div><div class="progress-track mt-3 w-full"><div class="progress-bar" style="width: {{ fleet_utilization }}%"></div></div></div>
+  </section>
+</div>
+
+<div class="mt-4 grid gap-4 xl:grid-cols-[1.58fr_1fr]">
+  {# Both panels below render data that came from the database in this request.
+     The chart is only emitted when the seven-day window contains scheduled
+     orders — an axis with seven identical zeros is decoration, not information. #}
+  {% if throughput.has_data %}
+  <section class="panel overflow-hidden">
+    <div class="panel-header">
+      <div><h2 class="panel-title">Seven-day throughput</h2><p class="panel-subtitle">Orders scheduled per service date against orders actually completed</p></div>
+      <span class="inline-flex items-center gap-2 text-xs font-semibold" style="color: var(--muted);">{{ icon('chart-line', 'text-base') }}Last 7 service days</span>
+    </div>
+    <div class="p-5">
+      <canvas
+        id="throughput-chart"
+        class="!h-64 w-full"
+        role="img"
+        aria-label="Line chart comparing orders scheduled with orders completed over the last seven service days"
+        data-chart="throughput"
+        data-labels="{{ throughput.days|join(',') }}"
+        data-scheduled="{{ throughput.scheduled|join(',') }}"
+        data-delivered="{{ throughput.delivered|join(',') }}"
+      ></canvas>
+      {# Chart.js needs a canvas; the table is the accessible equivalent and is
+         also what a screen reader or a no-JS browser actually reads. #}
+      <table class="sr-only">
+        <caption>Orders scheduled and completed per service day</caption>
+        <thead><tr><th scope="col">Service date</th><th scope="col">Scheduled</th><th scope="col">Completed</th></tr></thead>
+        <tbody>
+          {% for day in throughput.days %}
+          <tr><th scope="row">{{ day }}</th><td>{{ throughput.scheduled[loop.index0] }}</td><td>{{ throughput.delivered[loop.index0] }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="panel overflow-hidden">
+    <div class="panel-header"><div><h2 class="panel-title">Recent activity</h2><p class="panel-subtitle">Latest recorded changes across the organization</p></div>{{ icon('history', 'text-xl text-slate-400') }}</div>
+    {% if activity %}
+    <ol class="divide-y" style="border-color: var(--line);">
+      {% for entry in activity %}
+      <li class="flex items-start gap-3 px-5 py-3">
+        <span class="mt-0.5 shrink-0" style="color: var(--muted);">{{ icon('point-filled', 'text-base') }}</span>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-semibold">{{ entry.action }}</p>
+          <p class="truncate text-xs" style="color: var(--muted);">{{ entry.resource_type }}{% if entry.resource_id %} #{{ entry.resource_id }}{% endif %}</p>
+        </div>
+        <div class="shrink-0 text-right">
+          <p class="text-xs font-semibold">{{ entry.actor.get_full_name|default(entry.actor.email, true) if entry.actor else 'System' }}</p>
+          <p class="text-xs tabular-nums" style="color: var(--muted);">{{ entry.created_at.strftime('%d %b %H:%M') }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    {{ empty_state('history', 'No recorded activity', 'Changes to orders, plans and routes will appear here.') }}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

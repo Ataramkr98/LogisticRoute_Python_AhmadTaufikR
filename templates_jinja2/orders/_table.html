@@ -1,0 +1,11 @@
+<div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Reference</th><th>Customer / address</th><th>Window</th><th>Demand</th><th>Priority</th><th>Status</th><th>Route</th></tr></thead><tbody>
+{% for order in orders %}<tr>
+  <td><a class="table-link" href="{{ url('order-detail', kwargs={'order_id': order.pk}) }}">{{ order.external_ref }}</a><p class="mt-0.5 text-xs text-slate-400">{{ order.service_date }}</p></td>
+  <td><p class="font-semibold">{{ order.customer.name if order.customer else 'Walk-in' }}</p><p class="max-w-xs truncate text-xs text-slate-500">{{ order.delivery_address.one_line }}</p></td>
+  <td class="whitespace-nowrap">{{ order.time_window_start.strftime('%H:%M') if order.time_window_start else 'Flexible' }}{% if order.time_window_end %}–{{ order.time_window_end.strftime('%H:%M') }}{% endif %}</td>
+  <td><p>{{ order.demand_weight_kg }} kg</p><p class="text-xs text-slate-400">{{ order.package_count }} packages</p></td>
+  <td><span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold">{{ order.priority }}</span></td>
+  <td><span class="status status-{{ order.status }}">{{ order.status.replace('_',' ') }}</span></td>
+  <td>{% if order.assigned_route_stop %}<a class="table-link" href="{{ url('route-detail', kwargs={'route_id': order.assigned_route_stop.route_id}) }}">#{{ order.assigned_route_stop.route_id }}</a>{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+</tr>{% else %}<tr><td colspan="7" class="!py-12 text-center text-slate-500"><i class="ti ti-search-off mb-2 block text-3xl" aria-hidden="true"></i>No orders match these filters.</td></tr>{% endfor %}
+</tbody></table></div>

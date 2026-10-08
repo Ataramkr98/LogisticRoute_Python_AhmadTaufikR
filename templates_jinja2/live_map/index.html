@@ -1,0 +1,10 @@
+﻿{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Live map{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="page-eyebrow">Live operations</p><h1 class="page-title">Fleet map</h1><p class="page-description">Vehicle locations refresh every 15 seconds; stale positions are faded.</p></div><div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">{{ icon('refresh', 'text-base') }}Auto-refresh on</div></header>
+<div class="grid gap-5 xl:grid-cols-[1fr_320px]">
+  <section class="panel overflow-hidden"><div class="map-canvas min-h-[44rem]" data-live-map data-tile-url="{{ map_tile_url }}" data-attribution="{{ map_attribution|e }}"></div></section>
+  <aside class="panel overflow-hidden"><div class="panel-header"><div><h2 class="panel-title">Active routes</h2><p class="panel-subtitle">{{ routes_count }} visible</p></div>{{ icon('route', 'text-xl text-slate-400') }}</div><div class="max-h-[44rem] divide-y overflow-auto" style="border-color: var(--line);">{% for route in routes %}<a class="block p-4 transition hover:bg-stone-50" href="{{ url('route-detail', kwargs={'route_id': route.pk}) }}"><div class="flex items-center justify-between"><strong>{{ route.vehicle.code }}</strong><span class="status status-{{ route.status }}">{{ route.status }}</span></div><p class="mt-1 text-sm text-slate-600">{{ route.driver.full_name if route.driver else 'No driver' }}</p><p class="mt-2 flex items-center justify-between text-xs text-slate-400"><span>Route #{{ route.pk }} Â· {{ (route.total_distance_m / 1000)|round(1) }} km</span>{{ icon('chevron-right') }}</p></a>{% else %}<div class="empty-state">{{ icon('map-off', 'empty-state-icon') }}<h2>No active routes</h2><p>Dispatched routes will appear automatically.</p></div>{% endfor %}</div></aside>
+</div>
+{% endblock %}

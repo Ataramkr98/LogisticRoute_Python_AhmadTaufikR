@@ -1,0 +1,16 @@
+{% extends "layouts/error.html" %}
+{% block title %}Something went wrong{% endblock %}
+{% block guidance %}
+<div class="notice notice-danger mt-6">
+  <i class="ti ti-server-off text-lg mt-0.5" aria-hidden="true"></i>
+  <div>
+    <p class="font-semibold">The request failed before it could complete.</p>
+    <p class="mt-1 font-normal">
+      Nothing was committed: work that spans several records is written in a
+      single transaction, so a failure leaves the operation untouched rather
+      than half applied. Retry the action, and quote the reference below if it
+      keeps happening.
+    </p>
+  </div>
+</div>
+{% endblock %}

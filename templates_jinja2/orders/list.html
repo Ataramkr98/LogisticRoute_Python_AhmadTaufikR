@@ -1,0 +1,15 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Orders{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="page-eyebrow">Demand</p><h1 class="page-title">Orders</h1><p class="page-description">Validate, prioritize, and prepare work for planning.</p></div><div class="page-actions"><a class="btn-secondary" href="{{ url('order-import') }}">{{ icon('file-upload') }}Import CSV</a><a class="btn-primary" href="{{ url('order-create') }}">{{ icon('circle-plus') }}Create order</a></div></header>
+<section class="panel overflow-hidden">
+  <form class="filter-bar md:grid-cols-5" method="get" hx-get="{{ url('order-list') }}" hx-target="#order-table" hx-push-url="true" hx-trigger="change, keyup delay:350ms from:#order-search">
+    <div class="relative md:col-span-2">{{ icon('search', 'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400') }}<input id="order-search" class="field field-with-icon" type="search" name="q" value="{{ filters.get('q','') }}" placeholder="Reference or customer"></div>
+    <input class="field" type="date" name="date" value="{{ filters.get('date','') }}">
+    <select class="field" name="depot"><option value="">All depots</option>{% for depot in depots %}<option value="{{ depot.pk }}" {{ 'selected' if filters.get('depot')|int == depot.pk else '' }}>{{ depot.code }}</option>{% endfor %}</select>
+    <select class="field" name="status"><option value="">All statuses</option>{% for value, label in statuses %}<option value="{{ value }}" {{ 'selected' if filters.get('status') == value else '' }}>{{ label }}</option>{% endfor %}</select>
+  </form>
+  <div id="order-table">{% include "orders/_table.html" %}</div>
+</section>
+{% endblock %}

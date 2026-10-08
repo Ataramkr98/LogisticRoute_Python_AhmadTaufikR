@@ -1,0 +1,101 @@
+{% from "components/ui.html" import icon, flash_messages %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071827">
+  <title>{% block title %}Operations{% endblock %} · RouteOps</title>
+  <link rel="icon" href="{{ static('favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ static('build/app.css') }}">
+  <script src="{{ static('build/app.js') }}" defer></script>
+</head>
+<body>
+  <div class="min-h-screen" x-data="{ navOpen: false, fleetOpen: false, accountOpen: false }">
+    <header class="app-topbar">
+      <div class="app-topbar-inner">
+        <a href="{{ url('dashboard') }}" class="brand" aria-label="RouteOps Command Center">Route<span class="brand-accent">Ops</span></a>
+        <div class="org-switcher">
+          <span>{{ current_organization.name }}</span>
+          {{ icon('chevron-down', 'text-sm') }}
+        </div>
+
+        <nav class="top-nav" aria-label="Primary navigation">
+          <a href="{{ url('order-list') }}" class="top-nav-link {{ 'is-active' if request.path.startswith('/app/orders/') else '' }}" {{ 'aria-current="page"'|safe if request.path.startswith('/app/orders/') else '' }}>{{ icon('clipboard-text') }}<span>Orders</span></a>
+          <a href="{{ url('planning-new') }}" class="top-nav-link {{ 'is-active' if request.path.startswith('/app/planning/') else '' }}" {{ 'aria-current="page"'|safe if request.path.startswith('/app/planning/') else '' }}>{{ icon('route') }}<span>Planning</span></a>
+          <a href="{{ url('route-list') }}" class="top-nav-link {{ 'is-active' if request.path.startswith('/app/routes/') else '' }}" {{ 'aria-current="page"'|safe if request.path.startswith('/app/routes/') else '' }}>{{ icon('timeline') }}<span>Routes</span></a>
+          <a href="{{ url('live-map') }}" class="top-nav-link {{ 'is-active' if request.path == '/app/live-map/' else '' }}" {{ 'aria-current="page"'|safe if request.path == '/app/live-map/' else '' }}>{{ icon('map-2') }}<span>Live Map</span></a>
+          <div class="relative" @click.outside="fleetOpen = false">
+            <button type="button" class="top-nav-link {{ 'is-active' if request.path.startswith('/app/drivers/') or request.path.startswith('/app/vehicles/') or request.path.startswith('/app/depots/') else '' }}" {{ 'aria-current="page"'|safe if request.path.startswith('/app/drivers/') or request.path.startswith('/app/vehicles/') or request.path.startswith('/app/depots/') else '' }} @click="fleetOpen = !fleetOpen" :aria-expanded="fleetOpen.toString()">
+              {{ icon('truck-delivery') }}<span>Fleet</span>{{ icon('chevron-down', 'text-xs') }}
+            </button>
+            <div x-cloak x-show="fleetOpen" x-transition class="absolute left-0 top-[calc(100%+1px)] w-52 border bg-white py-2 shadow-xl" style="border-color: var(--line); border-radius: 8px;" role="menu">
+              <a class="mobile-nav-link" href="{{ url('driver-list') }}" role="menuitem">{{ icon('steering-wheel') }}Drivers</a>
+              <a class="mobile-nav-link" href="{{ url('vehicle-list') }}" role="menuitem">{{ icon('truck') }}Vehicles</a>
+              <a class="mobile-nav-link" href="{{ url('depot-list') }}" role="menuitem">{{ icon('building-warehouse') }}Depots</a>
+            </div>
+          </div>
+          <a href="{{ url('exceptions') }}" class="top-nav-link {{ 'is-active' if request.path == '/app/exceptions/' else '' }}" {{ 'aria-current="page"'|safe if request.path == '/app/exceptions/' else '' }}>{{ icon('alert-triangle') }}<span>Exceptions</span></a>
+          <a href="{{ url('reports') }}" class="top-nav-link {{ 'is-active' if request.path == '/app/reports/' else '' }}" {{ 'aria-current="page"'|safe if request.path == '/app/reports/' else '' }}>{{ icon('report-analytics') }}<span>Reports</span></a>
+          <a href="{{ url('settings') }}" class="top-nav-link {{ 'is-active' if request.path == '/app/settings/' else '' }}" {{ 'aria-current="page"'|safe if request.path == '/app/settings/' else '' }}>{{ icon('settings') }}<span>Settings</span></a>
+        </nav>
+
+        <div class="topbar-actions">
+          <a href="{{ url('exceptions') }}" class="topbar-icon" aria-label="Open exceptions">{{ icon('bell') }}</a>
+          <div class="relative" @click.outside="accountOpen = false">
+            <button class="topbar-icon" type="button" @click="accountOpen = !accountOpen" :aria-expanded="accountOpen.toString()" aria-label="Open account menu">{{ icon('user-circle') }}</button>
+            <div x-cloak x-show="accountOpen" x-transition class="absolute right-0 top-12 w-64 border bg-white p-3 text-slate-800 shadow-xl" style="border-color: var(--line); border-radius: 8px;">
+              <p class="truncate text-sm font-bold">{{ request.user.full_name or request.user.email }}</p>
+              <p class="truncate text-xs text-slate-500">{{ current_membership.get_role_display() }} · {{ request.user.email }}</p>
+              <a class="mobile-nav-link -mx-3 mt-3" href="{{ url('integrations') }}">{{ icon('plug-connected') }}Integrations</a>
+              <form method="post" action="{{ url('logout') }}" class="-mx-3 mb-[-0.75rem]">{{ csrf_input }}<button class="mobile-nav-link w-full" type="submit">{{ icon('logout') }}Sign out</button></form>
+            </div>
+          </div>
+          <button class="topbar-icon topbar-menu xl:hidden" type="button" @click="navOpen = true" aria-label="Open navigation">{{ icon('menu-2') }}</button>
+        </div>
+      </div>
+    </header>
+
+    <aside class="workspace-rail" aria-label="Workspace shortcuts">
+      <a class="rail-link {{ 'is-active' if request.path == '/app/dashboard/' else '' }}" href="{{ url('dashboard') }}" {{ 'aria-current="page"'|safe if request.path == '/app/dashboard/' else '' }}>{{ icon('layout-dashboard') }}<span>Command<br>Center</span></a>
+      <a class="rail-link {{ 'is-active' if request.path == '/app/orders/import/' else '' }}" href="{{ url('order-import') }}" {{ 'aria-current="page"'|safe if request.path == '/app/orders/import/' else '' }}>{{ icon('file-upload') }}<span>Import<br>Orders</span></a>
+      <a class="rail-link {{ 'is-active' if request.path == '/app/planning/new/' else '' }}" href="{{ url('planning-new') }}" {{ 'aria-current="page"'|safe if request.path == '/app/planning/new/' else '' }}>{{ icon('route-2') }}<span>New<br>Plan</span></a>
+      <a class="rail-link {{ 'is-active' if request.path == '/app/integrations/' else '' }}" href="{{ url('integrations') }}">{{ icon('plug-connected') }}<span>Integrations</span></a>
+      <div class="rail-spacer"></div>
+      <a class="rail-collapse {{ 'is-active' if request.path == '/app/settings/' else '' }}" href="{{ url('settings') }}" aria-label="Open settings" {{ 'aria-current="page"'|safe if request.path == '/app/settings/' else '' }}>{{ icon('adjustments') }}</a>
+    </aside>
+
+    <div x-cloak x-show="navOpen" class="mobile-nav-layer fixed inset-0 z-[60] bg-slate-950/50" @click="navOpen = false"></div>
+    <aside x-cloak x-show="navOpen" x-transition class="mobile-nav-layer mobile-drawer" aria-label="Mobile navigation">
+      <div class="flex h-16 items-center justify-between border-b px-5" style="border-color: var(--line);">
+        <span class="font-display text-lg font-extrabold" style="color: var(--ink);">Navigate</span>
+        <button class="icon-btn" type="button" @click="navOpen = false" aria-label="Close navigation">{{ icon('x') }}</button>
+      </div>
+      <nav class="flex-1 overflow-y-auto">
+        {% set mobile_navigation = [
+          ('layout-dashboard', 'Command Center', '/app/dashboard/'), ('clipboard-text', 'Orders', '/app/orders/'),
+          ('route', 'Planning', '/app/planning/new/'), ('timeline', 'Routes', '/app/routes/'),
+          ('map-2', 'Live Map', '/app/live-map/'), ('steering-wheel', 'Drivers', '/app/drivers/'),
+          ('truck', 'Vehicles', '/app/vehicles/'), ('building-warehouse', 'Depots', '/app/depots/'),
+          ('alert-triangle', 'Exceptions', '/app/exceptions/'), ('report-analytics', 'Reports', '/app/reports/'),
+          ('plug-connected', 'Integrations', '/app/integrations/'), ('settings', 'Settings', '/app/settings/')
+        ] %}
+        {% for icon_name, label, href in mobile_navigation %}
+          <a href="{{ href }}" class="mobile-nav-link {{ 'is-active' if request.path == href or (href != '/app/dashboard/' and request.path.startswith(href)) else '' }}" {{ 'aria-current="page"'|safe if request.path == href or (href != '/app/dashboard/' and request.path.startswith(href)) else '' }}>{{ icon(icon_name) }}<span>{{ label }}</span></a>
+        {% endfor %}
+      </nav>
+      <div class="border-t p-4" style="border-color: var(--line);">
+        <p class="truncate text-sm font-bold">{{ current_organization.name }}</p>
+        <p class="truncate text-xs text-slate-500">{{ request.user.full_name or request.user.email }}</p>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div class="page-container">
+        {% if messages %}{{ flash_messages(messages) }}{% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>

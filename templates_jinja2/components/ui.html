@@ -1,0 +1,39 @@
+{% macro icon(name, classes='', label=None) -%}
+<i class="ti ti-{{ name }} {{ classes }}" {% if label %}role="img" aria-label="{{ label }}"{% else %}aria-hidden="true"{% endif %}></i>
+{%- endmacro %}
+
+{% macro back_link(href, label) -%}
+<a class="back-link" href="{{ href }}"><i class="ti ti-arrow-left" aria-hidden="true"></i><span>{{ label }}</span></a>
+{%- endmacro %}
+
+{% macro empty_state(icon_name, title, message) -%}
+<div class="empty-state">
+  <i class="ti ti-{{ icon_name }} empty-state-icon" aria-hidden="true"></i>
+  <h2>{{ title }}</h2>
+  <p>{{ message }}</p>
+</div>
+{%- endmacro %}
+
+{# Flash messages arrive from Django's messages framework with a level tag.
+   Rendering them all as `notice-success` meant every validation failure and
+   permission rejection was shown to the operator in green with a checkmark —
+   the single most misleading thing the UI could do. Severity is derived from
+   the level and announced politely so a screen reader announces new flashes. #}
+{% macro flash_messages(messages) -%}
+{% if messages %}
+<div class="mb-5 space-y-2" aria-live="polite">
+  {% for message in messages %}
+    {% set level = message.level_tag | default('info') | lower %}
+    {% if level == 'success' %}
+      <div class="notice notice-success">{{ icon('circle-check', 'mt-0.5 text-lg') }}<span>{{ message }}</span></div>
+    {% elif level == 'error' %}
+      <div class="notice notice-danger">{{ icon('alert-circle', 'mt-0.5 text-lg') }}<span>{{ message }}</span></div>
+    {% elif level == 'warning' %}
+      <div class="notice notice-warning">{{ icon('alert-triangle', 'mt-0.5 text-lg') }}<span>{{ message }}</span></div>
+    {% else %}
+      <div class="notice notice-info">{{ icon('info-circle', 'mt-0.5 text-lg') }}<span>{{ message }}</span></div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}

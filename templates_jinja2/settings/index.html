@@ -1,0 +1,57 @@
+{% extends "layouts/app.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<header class="page-header"><div><p class="page-eyebrow">Configuration</p><h1 class="page-title">Settings</h1><p class="page-description">Organization planning policy and operating locations.</p></div></header>
+<div class="grid gap-6 lg:grid-cols-2">
+  <section class="panel overflow-hidden">
+    <div class="panel-header"><div class="flex items-center gap-3">{{ icon('adjustments', 'text-xl text-slate-500') }}<div><h2 class="panel-title">Planning profiles</h2><p class="panel-subtitle">Objectives and solver constraints</p></div></div>{% if request.user.is_staff %}<a class="section-link" href="/admin/planning/planningprofile/add/">{{ icon('plus') }}Add</a>{% endif %}</div>
+    <div class="divide-y" style="border-color: var(--line);">
+      {% for profile in profiles %}
+        {% if request.user.is_staff %}<a class="block p-5 transition hover:bg-stone-50" href="/admin/planning/planningprofile/{{ profile.pk }}/change/">{% else %}<div class="p-5">{% endif %}
+          <div class="flex items-center justify-between"><strong>{{ profile.name }}</strong><span class="status status-{{ 'AVAILABLE' if profile.active else 'INACTIVE' }}">{{ 'Active' if profile.active else 'Inactive' }}</span></div>
+          <p class="mt-2 text-xs text-slate-500">{{ profile.routing_profile }} · v{{ profile.version }} · {{ profile.objective_weights_json|length }} objective weights</p>
+        {% if request.user.is_staff %}</a>{% else %}</div>{% endif %}
+      {% else %}
+        <div class="empty-state">{{ icon('settings-off', 'empty-state-icon') }}<h2>No profiles configured</h2><p>{% if request.user.is_staff %}Add a planning profile to define solver behavior.{% else %}Ask an administrator to add a planning profile.{% endif %}</p></div>
+      {% endfor %}
+    </div>
+  </section>
+  {# The depot badge used to be hardcoded "Active" in green while the view
+     passed inactive depots straight through, so a decommissioned depot read as
+     operational. It now reflects depot.active, and the view filters nothing so
+     operators can still see inactive sites. #}
+  <section class="panel overflow-hidden">
+    <div class="panel-header"><div class="flex items-center gap-3">{{ icon('building-warehouse', 'text-xl text-slate-500') }}<div><h2 class="panel-title">Depots</h2><p class="panel-subtitle">Locations and service areas</p></div></div>{% if request.user.is_staff %}<a class="section-link" href="/admin/depots/depot/add/">{{ icon('plus') }}Add</a>{% endif %}</div>
+    <div class="divide-y" style="border-color: var(--line);">
+      {% for depot in depots %}
+        {% if request.user.is_staff %}<a class="block p-5 transition hover:bg-stone-50" href="/admin/depots/depot/{{ depot.pk }}/change/">{% else %}<div class="p-5">{% endif %}
+          <div class="flex items-center justify-between gap-3"><strong>{{ depot.code }} · {{ depot.name }}</strong><span class="status status-{{ 'AVAILABLE' if depot.active else 'INACTIVE' }}">{{ 'Active' if depot.active else 'Inactive' }}</span></div>
+          <p class="mt-2 truncate text-xs text-slate-500">{{ depot.address_text }} · {{ depot.timezone }}</p>
+        {% if request.user.is_staff %}</a>{% else %}</div>{% endif %}
+      {% else %}
+        <div class="empty-state">{{ icon('building-warehouse', 'empty-state-icon') }}<h2>No depots configured</h2><p>{% if request.user.is_staff %}Add an operating location to continue.{% else %}An administrator has not configured an operating location yet.{% endif %}</p></div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{# Django Admin is staff-only and switches to an OTP form when
+   ADMIN_MFA_REQUIRED is on, so every /admin link is gated. Ungated, a dispatcher
+   clicking "Edit in admin" was bounced to a login page they cannot pass. #}
+<section class="panel mt-6 p-6">
+  <div class="flex items-start gap-4">
+    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-2xl text-slate-700">{{ icon('shield-lock') }}</span>
+    <div class="min-w-0 flex-1">
+      <h2 class="panel-title">Security and access</h2>
+      <p class="mt-2 text-sm text-slate-500">Users, organization memberships, depot scopes, MFA devices, and audit logs are managed in Django Admin{% if not request.user.is_staff %} and require an administrator account{% endif %}.</p>
+      {% if request.user.is_staff %}
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a class="btn-secondary" href="/admin/accounts/user/">{{ icon('users') }}Users</a>
+        <a class="btn-secondary" href="/admin/organizations/organizationmembership/">{{ icon('user-shield') }}Memberships</a>
+        <a class="btn-secondary" href="/admin/audit/auditlog/">{{ icon('list-check') }}Audit log</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

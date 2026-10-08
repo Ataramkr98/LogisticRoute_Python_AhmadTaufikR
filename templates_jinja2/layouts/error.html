@@ -1,0 +1,59 @@
+{#
+  Standalone shell for the 400/403/404/500 pages.
+
+  These cannot extend layouts/app.html: that layout dereferences
+  current_organization and the navigation, both of which are unavailable or
+  meaningless when the request failed — and for a 500 the context processor may
+  itself be the thing that raised. Everything here is derived from `request`,
+  which always exists.
+#}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071827">
+  <title>{% block title %}Error{% endblock %} · RouteOps</title>
+  <link rel="icon" href="{{ static('favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ static('build/app.css') }}">
+</head>
+<body>
+  <main class="flex min-h-screen items-center justify-center px-5 py-12" style="background: var(--canvas);">
+    <div class="w-full max-w-lg">
+      <a href="/" class="brand text-xl" aria-label="RouteOps home">Route<span class="brand-accent">Ops</span></a>
+      <p class="page-eyebrow mt-10">Error {{ status_code }}</p>
+      <h1 class="page-title">{{ headline }}</h1>
+      <p class="page-description">{{ detail }}</p>
+
+      {% block guidance %}{% endblock %}
+
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a class="btn-primary" href="{{ url('home') }}">
+          <i class="ti ti-home" aria-hidden="true"></i><span>Back to safety</span>
+        </a>
+        {% if is_authenticated %}
+        <a class="btn-secondary" href="{{ url('dashboard') }}">
+          <i class="ti ti-layout-dashboard" aria-hidden="true"></i><span>Command Center</span>
+        </a>
+        {% else %}
+        <a class="btn-secondary" href="{{ url('login') }}">
+          <i class="ti ti-login" aria-hidden="true"></i><span>Sign in</span>
+        </a>
+        {% endif %}
+      </div>
+
+      {# The request id is echoed in the X-Request-ID header and written to the
+         structured log, so an operator can quote it and the failure can be
+         traced to a single request. #}
+      <p class="mt-8 border-t pt-5 text-xs leading-5" style="border-color: var(--line); color: var(--muted);">
+        {% if request_id %}
+          Reference <strong style="color: var(--text);">{{ request_id }}</strong>
+          — quote this when reporting the problem.
+        {% elif request_path %}
+          Path <strong style="color: var(--text);">{{ request_path }}</strong>
+        {% endif %}
+      </p>
+    </div>
+  </main>
+</body>
+</html>

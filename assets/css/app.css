@@ -1,0 +1,206 @@
+@import "tailwindcss";
+@import "../../node_modules/leaflet/dist/leaflet.css";
+@import "../../node_modules/@tabler/icons-webfont/dist/tabler-icons.min.css";
+@source "../../templates_jinja2";
+@source "../../apps";
+@source "../js";
+
+@font-face {
+  font-family: "Manrope Variable";
+  src: url("./fonts/manrope-latin-wght-normal.woff2") format("woff2");
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+}
+@font-face {
+  font-family: "Inter Variable";
+  src: url("./fonts/inter-latin-wght-normal.woff2") format("woff2");
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+}
+
+:root {
+  color-scheme: light;
+  --canvas: #f8f7f2;
+  --surface: #ffffff;
+  --surface-subtle: #f3f4ef;
+  --ink: #071827;
+  --text: #172033;
+  --muted: #667085;
+  --line: #d9ddd8;
+  --line-strong: #c3c9c3;
+  --brand: #1264e8;
+  --brand-dark: #0d4fbc;
+  --success: #126b46;
+  --success-soft: #eaf5ef;
+  --warning: #e76f24;
+  --warning-soft: #fff1e8;
+  --danger: #d92d20;
+  --danger-soft: #fff0ee;
+  font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+* { scrollbar-color: #b7beb8 transparent; }
+html { background: var(--canvas); }
+body { @apply min-h-screen antialiased; background: var(--canvas); color: var(--text); }
+h1, h2, h3, .font-display { font-family: "Manrope Variable", "Inter Variable", sans-serif; }
+a, button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+[x-cloak] { display: none !important; }
+
+.app-topbar { @apply sticky top-0 z-50 h-16 border-b; background: var(--ink); border-color: #183044; color: white; }
+.app-topbar-inner { @apply flex h-full items-center gap-5 px-4 lg:px-7; }
+.brand { @apply inline-flex shrink-0 items-center text-xl font-extrabold tracking-[-0.04em] text-white; font-family: "Manrope Variable", sans-serif; }
+.brand-accent { color: #35a7ff; }
+.org-switcher { @apply hidden items-center gap-2 border-l px-4 text-xs font-semibold text-slate-200 lg:flex; border-color: #294052; }
+.top-nav { @apply hidden h-full flex-1 items-stretch justify-center xl:flex; }
+.top-nav-link { @apply relative inline-flex h-full items-center gap-2 px-3.5 text-sm font-medium text-slate-200 transition hover:bg-white/5 hover:text-white; }
+.top-nav-link::after { content: ""; @apply absolute inset-x-3 bottom-0 h-0.5 scale-x-0 bg-blue-500 transition-transform; }
+.top-nav-link.is-active { @apply bg-white/[0.04] text-blue-400; }
+.top-nav-link.is-active::after { @apply scale-x-100; }
+.top-nav-link .ti { @apply text-[20px]; }
+.topbar-actions { @apply ml-auto flex shrink-0 items-center gap-1; }
+.topbar-icon { @apply inline-flex h-10 w-10 items-center justify-center rounded-lg text-xl text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400; }
+
+.workspace-rail { @apply fixed bottom-0 left-0 top-16 z-40 hidden w-[88px] flex-col border-r bg-white xl:flex; border-color: var(--line); }
+.rail-link { @apply relative flex min-h-[88px] flex-col items-center justify-center gap-2 border-b px-2 text-center text-[11px] font-semibold leading-tight transition; border-color: var(--line); color: #3d4858; }
+.rail-link .ti { @apply text-[22px]; }
+.rail-link:hover { background: var(--surface-subtle); color: var(--ink); }
+.rail-link.is-active { color: var(--success); background: #f3f8f4; }
+.rail-link.is-active::before { content: ""; @apply absolute inset-y-0 left-0 w-[3px]; background: var(--success); }
+.rail-spacer { @apply flex-1; }
+.rail-collapse { @apply flex h-14 items-center justify-center border-t text-xl; border-color: var(--line); color: var(--ink); }
+.rail-collapse.is-active { background: var(--success-soft); color: var(--success); }
+
+.app-main { @apply min-w-0 xl:pl-[88px]; }
+.page-container { @apply mx-auto max-w-[1800px] px-4 py-6 sm:px-6 lg:px-7 lg:py-8; }
+.mobile-drawer { @apply fixed inset-y-0 right-0 z-[70] flex w-[min(90vw,340px)] flex-col border-l bg-white shadow-2xl; border-color: var(--line); }
+.mobile-nav-link { @apply flex min-h-12 items-center gap-3 border-b px-5 text-sm font-semibold; border-color: var(--line); color: var(--text); }
+.mobile-nav-link .ti { @apply w-6 text-xl; color: var(--muted); }
+.mobile-nav-link.is-active { background: #eef5ff; color: var(--brand); }
+
+.page-header { @apply mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between; }
+.page-eyebrow { @apply mb-1 text-xs font-bold uppercase tracking-[0.14em]; color: var(--success); }
+.page-title { @apply text-[2rem] font-extrabold leading-tight tracking-[-0.04em] sm:text-[2.25rem]; color: var(--ink); }
+.page-description { @apply mt-1 text-sm; color: var(--muted); }
+.page-actions { @apply flex flex-wrap items-center gap-2; }
+.back-link { @apply mb-3 inline-flex items-center gap-2 text-sm font-semibold transition; color: var(--brand); }
+.back-link:hover { color: var(--brand-dark); }
+.back-link .ti { @apply text-lg; }
+
+.panel { @apply border bg-white; border-color: var(--line); border-radius: 8px; box-shadow: 0 1px 2px rgb(7 24 39 / 0.03); }
+.panel-header { @apply flex min-h-14 items-center justify-between gap-4 border-b px-4 py-3 sm:px-5; border-color: var(--line); }
+.panel-body { @apply p-5; }
+.panel-title { @apply text-base font-bold; color: var(--ink); }
+.panel-subtitle { @apply mt-0.5 text-xs; color: var(--muted); }
+.section-link { @apply inline-flex items-center gap-1.5 text-xs font-semibold; color: var(--brand); }
+
+.btn { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50; }
+.btn .ti, .btn-primary .ti, .btn-secondary .ti, .btn-danger .ti { @apply text-lg; }
+.btn-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50; background: var(--brand); }
+.btn-primary:hover { background: var(--brand-dark); }
+.btn-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border bg-white px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50; border-color: var(--line-strong); color: #344054; }
+.btn-secondary:hover { background: var(--surface-subtle); border-color: #9da69f; }
+.btn-danger { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50; background: var(--danger); }
+.btn-driver { @apply inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-lg px-5 py-3 text-base font-bold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200 disabled:opacity-50; }
+.icon-btn { @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border bg-white text-xl transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500; border-color: var(--line); color: var(--text); }
+.icon-btn:hover { background: var(--surface-subtle); }
+
+.field { @apply min-h-11 w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition; border-color: var(--line-strong); color: var(--text); }
+.field.field-with-icon { padding-left: 2.5rem; }
+.field::placeholder { color: #98a2b3; }
+.field:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgb(18 100 232 / 0.12); }
+.label { @apply mb-1.5 block text-xs font-semibold; color: #475467; }
+.filter-bar { @apply grid gap-3 border-b p-4; background: #fafaf7; border-color: var(--line); }
+
+.data-table { @apply min-w-full border-collapse text-left text-sm; }
+.data-table th { @apply whitespace-nowrap border-b px-4 py-3 text-[11px] font-bold uppercase tracking-[0.08em]; background: #fafaf7; border-color: var(--line); color: #667085; }
+.data-table td { @apply border-b px-4 py-3.5 align-middle; border-color: #e6e8e4; color: #344054; }
+.data-table tbody tr { @apply transition-colors; }
+.data-table tbody tr:hover { background: #fafaf7; }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.table-link { @apply inline-flex items-center gap-1.5 font-semibold; color: var(--ink); }
+.table-link:hover { color: var(--brand); }
+
+/* Status pills. Every enum value that any template actually renders needs a
+   rule here; a missing one produces a transparent chip with no background, so
+   an operational state silently loses its colour coding. The groups below cover
+   the choice sets on Order, Route, RouteStop, RoutePlan, PlanningRun,
+   OperationException, Driver, Vehicle, DriverShift, ReportExport and ImportJob. */
+.status { @apply inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold leading-none; }
+.status-DRAFT, .status-PENDING, .status-QUEUED, .status-SCHEDULED, .status-OPEN { @apply bg-slate-100 text-slate-700; }
+.status-READY, .status-PLANNED, .status-OPTIMIZED, .status-REVIEW, .status-VALID { background: #eaf1ff; color: #1557b0; }
+.status-DISPATCHED, .status-EN_ROUTE, .status-ACKNOWLEDGED { background: #e9f7f3; color: #0b7552; }
+.status-IN_PROGRESS, .status-PROCESSING, .status-ARRIVED, .status-SERVICING, .status-OFF_DUTY, .status-PARTIALLY_COMPLETED { background: var(--warning-soft); color: #a84510; }
+.status-COMPLETED, .status-AVAILABLE, .status-DELIVERED, .status-IN_USE, .status-RESOLVED, .status-ON_ROUTE { background: var(--success-soft); color: var(--success); }
+.status-FAILED, .status-INVALID, .status-UNASSIGNED, .status-CANCELLED, .status-INACTIVE, .status-SKIPPED { background: var(--danger-soft); color: var(--danger); }
+.status-SUPERSEDED, .status-MAINTENANCE { background: var(--warning-soft); color: #a84510; }
+/* Presentation-only tone for the integrations board, so a deterministic local
+   provider never reads as a healthy external dependency. Not a model value. */
+.status-NEUTRAL { @apply bg-slate-100 text-slate-700; }
+
+.metric-strip { @apply grid border-y lg:grid-cols-4; border-color: var(--line); }
+.metric-item { @apply flex min-h-20 items-center gap-3 border-b px-4 py-3 lg:border-b-0 lg:border-r; border-color: var(--line); }
+.metric-item:last-child { border-right: 0; border-bottom: 0; }
+.metric-icon { @apply flex h-9 w-9 shrink-0 items-center justify-center text-2xl; color: var(--ink); }
+.metric-value { @apply text-lg font-extrabold tabular-nums; color: var(--ink); }
+.metric-label { @apply text-xs; color: var(--muted); }
+.progress-track { @apply h-1.5 min-w-20 overflow-hidden rounded-full; background: #e4e7e4; }
+.progress-bar { @apply h-full rounded-full; background: var(--success); }
+
+.map-canvas { @apply min-h-[28rem] w-full; background: #eef1ed; }
+.driver-map { @apply h-52 w-full rounded-lg; background: #eef1ed; }
+.leaflet-container { font-family: "Inter Variable", sans-serif; }
+.leaflet-tile-pane { filter: grayscale(0.55) saturate(0.5) contrast(0.86) brightness(1.1); }
+.leaflet-bar a { color: var(--ink); }
+.marker-pin { @apply flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-bold text-white; background: var(--success); box-shadow: 0 2px 8px rgb(7 24 39 / 0.25); }
+.marker-pin.is-vehicle { @apply text-base; background: var(--ink); }
+.timeline-line::before { content: ""; @apply absolute bottom-0 left-[1.05rem] top-8 w-px; background: var(--line); }
+
+.empty-state { @apply px-6 py-12 text-center; color: var(--muted); }
+.empty-state-icon { @apply mx-auto block text-4xl; color: #8b9690; }
+.empty-state h2 { @apply mt-4 text-base font-bold; color: var(--ink); }
+.empty-state p { @apply mx-auto mt-1 max-w-md text-sm; }
+.notice { @apply flex items-start gap-3 rounded-lg border px-4 py-3 text-sm font-medium; }
+.notice-info { background: #eef5ff; border-color: #bfd6ff; color: #174c91; }
+.notice-warning { background: var(--warning-soft); border-color: #f5c9ad; color: #8f3b0b; }
+.notice-danger { background: var(--danger-soft); border-color: #f4b5af; color: #9b241a; }
+.notice-success { background: var(--success-soft); border-color: #b8dfcb; color: var(--success); }
+
+.driver-shell { background: var(--canvas); }
+.driver-topbar { @apply sticky top-0 z-40 border-b px-4 py-3 text-white; background: var(--ink); border-color: #183044; }
+.driver-bottom-nav { @apply fixed inset-x-0 bottom-0 z-40 border-t bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2; border-color: var(--line); }
+.driver-nav-link { @apply flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-semibold; color: var(--muted); }
+.driver-nav-link .ti { @apply text-xl; }
+.driver-nav-link.is-active { background: var(--success-soft); color: var(--success); }
+
+form p { @apply mb-4; }
+form p label { @apply mb-1.5 block text-xs font-semibold; color: #475467; }
+form p input, form p select, form p textarea { @apply min-h-11 w-full rounded-lg border bg-white px-3 py-2.5 text-sm outline-none transition; border-color: var(--line-strong); }
+form p input:focus, form p select:focus, form p textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgb(18 100 232 / 0.12); }
+form .errorlist { @apply mb-1 list-none text-sm font-medium; color: var(--danger); }
+
+@media (max-width: 1023px) {
+  .metric-strip { @apply grid-cols-2; }
+  .metric-item:nth-child(odd) { border-right: 1px solid var(--line); }
+}
+@media (min-width: 1280px) and (max-width: 1379px) {
+  .top-nav,
+  .workspace-rail { display: none !important; }
+  /* The rail is hidden in this band, so its 88px gutter has to be removed too.
+     It is a padding-left on .app-main, not a margin — resetting `margin-left`
+     here did nothing and left 88px of dead space beside every page between
+     1280px and 1379px wide. */
+  .app-main { padding-left: 0 !important; }
+  .topbar-menu { display: inline-flex !important; }
+}
+@media (min-width: 1380px) {
+  .mobile-nav-layer { display: none !important; }
+}
+@media (max-width: 768px) {
+  .page-container { @apply py-5; }
+  .map-canvas { min-height: 22rem; }
+  .page-title { @apply text-[1.75rem]; }
+  .metric-item { @apply min-h-16 px-3; }
+  .data-table th, .data-table td { @apply px-3; }
+}

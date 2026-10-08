@@ -1,0 +1,80 @@
+﻿{% extends "layouts/driver.html" %}
+{% from "components/ui.html" import icon, back_link %}
+
+{#
+  A stop is not always a delivery. Depot start/end and break stops are real
+  route rows with no order attached, so every order-derived value below is
+  guarded. The heading, address block and action list each fall back to the
+  stop's own address and type, which keeps a depot stop usable instead of
+  crashing the page.
+#}
+{% set order = stop.order %}
+{% set is_delivery = order is not none %}
+{% set stop_title = (order.customer.name if order and order.customer else order.external_ref) if is_delivery else stop.get_stop_type_display() %}
+{% set stop_address = (order.delivery_address.one_line if order and order.delivery_address else (stop.address.one_line if stop.address else none)) %}
+
+{% block title %}Stop {{ stop.sequence }}{% endblock %}
+{% block content %}
+<header class="mb-5 flex items-start justify-between gap-3">
+  <div>
+    {{ back_link(url('driver-route-page', kwargs={'route_id': stop.route_id}), 'Route') }}
+    <p class="page-eyebrow">Stop {{ stop.sequence }} Â· {{ stop.get_stop_type_display() }}</p>
+    <h1 class="text-2xl font-extrabold">{{ stop_title }}</h1>
+  </div>
+  <span class="status status-{{ stop.status }}">{{ stop.status.replace('_',' ') }}</span>
+</header>
+
+<section class="panel overflow-hidden">
+  <div class="p-5">
+    <p class="inline-flex items-center gap-2 text-xs font-bold uppercase text-slate-400">{{ icon('map-pin', 'text-base') }}{{ 'Delivery address' if is_delivery else 'Stop location' }}</p>
+    {% if stop_address %}
+      <p class="mt-2 text-lg font-bold">{{ stop_address }}</p>
+    {% else %}
+      <p class="mt-2 text-lg font-bold">{{ stop.location.y|round(5) }}, {{ stop.location.x|round(5) }}</p>
+      <p class="mt-1 text-sm text-slate-500">No street address recorded for this stop.</p>
+    {% endif %}
+    <div class="mt-4 grid grid-cols-2 gap-px border" style="border-color: var(--line); background: var(--line);">
+      <div class="bg-white p-3"><p class="text-xs text-slate-500">Planned arrival</p><p class="mt-1 font-extrabold">{{ stop.planned_arrival_at.strftime('%H:%M') }}</p></div>
+      <div class="bg-white p-3"><p class="text-xs text-slate-500">Service time</p><p class="mt-1 font-extrabold">{{ (stop.service_duration_s / 60)|round }} min</p></div>
+    </div>
+  </div>
+  <a class="flex min-h-14 items-center justify-center gap-2 px-5 font-bold text-white" style="background: var(--ink);" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination={{ stop.location.y }},{{ stop.location.x }}">{{ icon('navigation', 'text-xl') }}Open navigation</a>
+</section>
+
+{# Gate on is_delivery only. The previous `and order.packages` guard referenced a
+   field that does not exist on Order (`packages`, `weight_g`, `volume_l` exist
+   only on internal solver types), so it was always falsy and the entire Load
+   section was unreachable â€” drivers never saw the cargo they were collecting. #}
+{% if is_delivery %}
+<section class="panel mt-4">
+  <div class="panel-body">
+    <p class="text-xs font-bold uppercase text-slate-400">Load</p>
+    <div class="mt-3 grid grid-cols-3 gap-px border" style="border-color: var(--line); background: var(--line);">
+      <div class="bg-white p-3"><p class="text-xs text-slate-500">Packages</p><p class="mt-1 font-extrabold">{{ order.package_count }}</p></div>
+      <div class="bg-white p-3"><p class="text-xs text-slate-500">Weight</p><p class="mt-1 font-extrabold">{{ order.demand_weight_kg|round(1) }} kg</p></div>
+      <div class="bg-white p-3"><p class="text-xs text-slate-500">Volume</p><p class="mt-1 font-extrabold">{{ order.demand_volume_m3|round(2) }} mÂ³</p></div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% if is_delivery and order.special_instructions %}
+<section class="notice notice-warning mt-4">{{ icon('message-exclamation', 'text-xl') }}<div><p class="text-xs font-bold uppercase">Special instructions</p><p class="mt-1 text-sm">{{ order.special_instructions }}</p></div></section>
+{% endif %}
+
+<div class="mt-5 space-y-3">
+  {% if not is_delivery %}
+    {# Depot and break stops carry no proof-of-delivery flow; they only need to
+       be acknowledged so the route timeline advances. #}
+    {% if stop.status in ['PENDING','EN_ROUTE'] %}
+      <button class="btn-driver bg-blue-600 text-white" type="button" data-driver-action data-event-type="STOP_ARRIVED" data-route-id="{{ stop.route_id }}" data-stop-id="{{ stop.pk }}" data-expected-version="{{ stop.version }}">{{ icon('map-pin-check', 'text-xl') }}I've arrived</button>
+    {% elif stop.status in ['ARRIVED','SERVICING'] %}
+      <button class="btn-driver bg-emerald-700 text-white" type="button" data-driver-action data-event-type="STOP_COMPLETED" data-route-id="{{ stop.route_id }}" data-stop-id="{{ stop.pk }}" data-expected-version="{{ stop.version }}">{{ icon('circle-check', 'text-xl') }}Complete stop</button>
+    {% endif %}
+  {% else %}
+    {% if stop.status in ['PENDING','EN_ROUTE'] %}<button class="btn-driver bg-blue-600 text-white" type="button" data-driver-action data-event-type="STOP_ARRIVED" data-route-id="{{ stop.route_id }}" data-stop-id="{{ stop.pk }}" data-expected-version="{{ stop.version }}">{{ icon('map-pin-check', 'text-xl') }}I've arrived</button>{% endif %}
+    {% if stop.status in ['ARRIVED','SERVICING'] %}<a class="btn-driver border bg-white text-slate-800" style="border-color: var(--line);" href="{{ url('driver-pod-page', kwargs={'stop_id': stop.pk}) }}">{{ icon('camera', 'text-xl') }}Add proof of delivery</a><button class="btn-driver bg-emerald-700 text-white" type="button" data-driver-action data-event-type="STOP_COMPLETED" data-route-id="{{ stop.route_id }}" data-stop-id="{{ stop.pk }}" data-expected-version="{{ stop.version }}">{{ icon('circle-check', 'text-xl') }}Complete stop</button><button class="btn-driver border bg-red-50 text-red-700" type="button" style="border-color: #f4b5af;" data-driver-action data-event-type="STOP_FAILED" data-route-id="{{ stop.route_id }}" data-stop-id="{{ stop.pk }}" data-expected-version="{{ stop.version }}" data-reason-code="CUSTOMER_UNAVAILABLE">{{ icon('alert-triangle', 'text-xl') }}Report failed delivery</button>{% endif %}
+  {% endif %}
+  {% if stop.status in ['COMPLETED','FAILED','SKIPPED'] %}<div class="border p-5 text-center text-white" style="background: var(--ink); border-color: #183044; border-radius: 8px;"><p class="font-bold">Stop closed</p><a class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-blue-300" href="{{ url('driver-route-page', kwargs={'route_id': stop.route_id}) }}">Continue route {{ icon('arrow-right') }}</a></div>{% endif %}
+</div>
+{% endblock %}

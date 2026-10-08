@@ -1,0 +1,40 @@
+{% extends "layouts/driver.html" %}
+{% from "components/ui.html" import icon, back_link %}
+{% block title %}Proof of delivery{% endblock %}
+{% block content %}
+<header class="mb-5">{{ back_link(url('driver-stop-page', kwargs={'stop_id': stop.pk}), 'Stop ' ~ stop.sequence) }}<h1 class="page-title">Proof of delivery</h1><p class="page-description">{{ stop.order.external_ref if stop.order else stop.get_stop_type_display() }} · Files are stored privately.</p></header>
+{# Every control carries a matching id/for pair. The labels were previously
+   unassociated, which left `recipient_name` with no accessible name at all and
+   made clicking a label do nothing — a real problem for a gloved driver using
+   a phone. #}
+<form method="post" enctype="multipart/form-data" class="panel p-5">
+  {{ csrf_input }}
+  <div class="mb-5 flex h-11 w-11 items-center justify-center rounded-lg bg-blue-50 text-2xl text-blue-700">{{ icon('camera') }}</div>
+
+  <label class="label" for="id_recipient_name">Recipient name</label>
+  <input class="field mb-4" id="id_recipient_name" name="recipient_name" value="{{ pod.recipient_name if pod else '' }}" autocomplete="name" required>
+
+  <label class="label" for="id_recipient_relation">Relationship</label>
+  <input class="field mb-4" id="id_recipient_relation" name="recipient_relation" value="{{ pod.recipient_relation if pod else '' }}" placeholder="Customer, security, colleague">
+
+  <label class="label" for="id_photo_file">Delivery photo</label>
+  <input class="field mb-4" id="id_photo_file" type="file" name="photo_file" accept="image/jpeg,image/png,image/webp" capture="environment" aria-describedby="photo-help">
+  <p class="mb-4 text-xs text-slate-500" id="photo-help">JPEG, PNG or WebP. Captures the rear camera on a phone.</p>
+
+  <label class="label" for="id_signature_file">Signature image</label>
+  <input class="field mb-4" id="id_signature_file" type="file" name="signature_file" accept="image/png,image/jpeg">
+
+  <label class="label" for="id_note">Note</label>
+  <textarea class="field" id="id_note" name="note" rows="3" placeholder="Optional delivery note">{{ pod.note if pod else '' }}</textarea>
+
+  {# Re-opening a stop that already has proof previously showed two empty file
+     inputs with no sign that anything was saved. #}
+  {% if pod %}
+    <div class="mt-4 flex items-center gap-2 text-xs font-semibold" style="color: var(--success);">
+      {{ icon('circle-check', 'text-base') }}<span>Proof saved{% if pod.captured_at %} on {{ pod.captured_at.strftime('%d %b %Y, %H:%M') }}{% endif %}. Uploading a file replaces it.</span>
+    </div>
+  {% endif %}
+
+  <button class="btn-driver mt-5 bg-blue-600 text-white" type="submit">{{ icon('device-floppy', 'text-xl') }}Save proof</button>
+</form>
+{% endblock %}

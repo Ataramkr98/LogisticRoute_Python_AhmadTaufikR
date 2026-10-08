@@ -1,0 +1,51 @@
+{# Shown when an authenticated account has no active organization membership.
+
+   Memberships are deactivated rather than deleted, so this is a normal
+   lifecycle outcome rather than an error state. Every other page needs an
+   organization, so the session is ended and the reason explained here. #}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071827">
+  <title>No active organization · RouteOps</title>
+  <link rel="icon" href="{{ static('favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ static('build/app.css') }}">
+</head>
+<body>
+  <main class="flex min-h-screen items-center justify-center px-5 py-12" style="background: var(--canvas);">
+    <div class="w-full max-w-lg">
+      <p class="page-eyebrow">Account access</p>
+      <h1 class="page-title">No active organization</h1>
+      <p class="page-description">
+        This account signed in successfully but is not currently a member of an active
+        organization, so there is no workspace to open.
+      </p>
+
+      <div class="notice notice-warning mt-6">
+        <i class="ti ti-alert-triangle text-lg mt-0.5" aria-hidden="true"></i>
+        <div>
+          <p class="font-semibold">You have been signed out.</p>
+          <p class="mt-1 font-normal">
+            An operations administrator can restore your access by reactivating your
+            membership. Once that is done, sign in again.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a class="btn-primary" href="{{ url('login') }}">
+          <i class="ti ti-login" aria-hidden="true"></i><span>Back to sign in</span>
+        </a>
+      </div>
+
+      <p class="mt-8 border-t pt-5 text-xs leading-5" style="border-color: var(--line); color: var(--muted);">
+        {% if unusable_account_email %}
+          Signed in as <strong style="color: var(--text);">{{ unusable_account_email }}</strong>
+        {% endif %}
+      </p>
+    </div>
+  </main>
+</body>
+</html>

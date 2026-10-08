@@ -1,0 +1,22 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.playwright-cli/
+test-results/
+playwright-report/
+node_modules/
+staticfiles/
+static/build/
+media/private/*
+!media/private/.gitkeep
+output/
+# docs/screenshots/ is deliberately NOT ignored: the README embeds these images,
+# so a reviewer cloning the repository must receive them.
+coverage.xml
+htmlcov/
+*.log

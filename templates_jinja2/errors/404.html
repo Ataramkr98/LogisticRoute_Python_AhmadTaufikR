@@ -1,0 +1,15 @@
+{% extends "layouts/error.html" %}
+{% block title %}Page not found{% endblock %}
+{% block guidance %}
+<div class="notice notice-warning mt-6">
+  <i class="ti ti-compass-off text-lg mt-0.5" aria-hidden="true"></i>
+  <div>
+    <p class="font-semibold">That address does not match any page.</p>
+    <p class="mt-1 font-normal">
+      The record may have been deleted, or the link may belong to a different
+      organization. Operational records are scoped per organization, so a link
+      shared across tenants will not resolve.
+    </p>
+  </div>
+</div>
+{% endblock %}

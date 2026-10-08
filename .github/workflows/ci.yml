@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # PostGIS rather than plain Postgres: the schema stores SRID 4326 geometry
+      # columns and the migrations enable the extension, so a stock postgres
+      # image would fail at the first spatial field.
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: logistics
+          POSTGRES_USER: logistics
+          POSTGRES_PASSWORD: logistics
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U logistics -d logistics"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      DJANGO_SECRET_KEY: ci-secret
+      FIELD_ENCRYPTION_KEY: ci-encryption-key
+      DATABASE_NAME: logistics
+      DATABASE_USER: logistics
+      DATABASE_PASSWORD: logistics
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: "5432"
+      DATABASE_SSLMODE: disable
+      REDIS_URL: redis://127.0.0.1:6379/0
+      CELERY_BROKER_URL: redis://127.0.0.1:6379/1
+      # DJANGO_DEBUG is deliberately left unset. It defaults to false, so CI runs
+      # the suite under the same secure posture as a deployment; tests/conftest.py
+      # relaxes only ALLOWED_HOSTS and SECURE_SSL_REDIRECT, which describe the
+      # network rather than app behaviour.
+      DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost
+      DJANGO_CSRF_TRUSTED_ORIGINS: http://127.0.0.1:8000
+      API_PAGE_SIZE: "50"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install GDAL and GEOS
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev binutils libproj-dev libgeos-dev
+      - run: python -m pip install -r requirements-dev.txt
+      - run: npm ci --no-audit --no-fund
+      - run: python -m ruff check .
+      - run: python manage.py check
+      # With DJANGO_DEBUG unset this fails the run outright if the placeholder
+      # secret key is ever used outside development, which is the point.
+      - run: python manage.py check --deploy
+        env:
+          DJANGO_SECRET_KEY: ${{ secrets.CI_DEPLOY_CHECK_SECRET_KEY || 'a-long-random-value-for-the-deploy-check-only-0123456789' }}
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py migrate
+      # No pre-seed step: the seeder-idempotency tests invoke seed_demo themselves,
+      # and seeding here as well would only duplicate a 16-minute run.
+      - run: python -m pytest tests/unit tests/integration -q
+      - run: npm run build
+
+

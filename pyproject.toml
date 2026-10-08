@@ -1,0 +1,27 @@
+[project]
+name = "logistics-route-optimization"
+version = "0.1.0"
+description = "Multi-tenant logistics route planning and driver execution platform"
+requires-python = ">=3.14,<3.15"
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
+ignore = ["DJ001", "DJ008", "E501"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--strict-markers --disable-warnings"
+markers = [
+  "integration: crosses application boundaries",
+  "performance: performance or scale scenario",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["apps"]

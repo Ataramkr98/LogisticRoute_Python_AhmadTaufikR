@@ -1,0 +1,14 @@
+﻿{% extends "layouts/driver.html" %}
+{% from "components/ui.html" import icon %}
+{% block title %}Today's route{% endblock %}
+{% block content %}
+<header class="mb-5"><p class="page-eyebrow">Hello, {{ driver.full_name.split(' ')[0] }}</p><h1 class="page-title">Today's work</h1><p class="page-description">{{ driver.depot.name }} Â· {{ driver.status.replace('_',' ').title() }}</p></header>
+{% for route in routes %}<section class="panel mb-5 overflow-hidden"><div class="p-5 text-white" style="background: var(--ink);"><div class="flex items-start justify-between gap-3"><div><p class="text-xs font-bold uppercase tracking-widest text-slate-400">Route #{{ route.pk }}</p><p class="mt-2 text-2xl font-extrabold">{{ route.stops.count() - 2 }} stops</p><p class="mt-1 inline-flex items-center gap-2 text-sm text-slate-300">{{ icon('road', 'text-base') }}{{ (route.total_distance_m / 1000)|round(1) }} km Â· {{ (route.total_duration_s / 3600)|round(1) }} hours</p></div><span class="status status-{{ route.status }}">{{ route.status.replace('_',' ') }}</span></div></div><div class="p-5">
+  {% set next_stop = route.stops.filter(order__isnull=False).exclude(status__in=['COMPLETED','FAILED','SKIPPED']).first() %}
+  {# ``customer`` is optional on an order (walk-in collections), so the name
+     falls back to the order reference rather than failing the render. #}
+  {% if next_stop %}<p class="text-xs font-bold uppercase text-slate-400">Next stop</p><p class="mt-2 text-lg font-bold">{{ next_stop.order.customer.name if next_stop.order.customer else next_stop.order.external_ref }}</p><p class="mt-1 flex items-start gap-2 text-sm text-slate-500">{{ icon('map-pin', 'mt-0.5 shrink-0 text-base') }}<span>{{ next_stop.order.delivery_address.one_line if next_stop.order.delivery_address else (next_stop.address.one_line if next_stop.address else next_stop.order.external_ref) }}</span></p>{% endif %}
+  <a class="btn-driver mt-5 bg-blue-600 text-white" href="{{ url('driver-route-page', kwargs={'route_id': route.pk}) }}">{{ icon('route', 'text-xl') }}{{ 'Continue route' if route.status == 'IN_PROGRESS' else 'Review route' }}</a>
+  {% if route.status == 'DISPATCHED' %}<button class="btn-driver mt-3 border bg-white text-slate-800" type="button" style="border-color: var(--line);" data-driver-action data-event-type="ROUTE_STARTED" data-route-id="{{ route.pk }}" data-expected-version="{{ route.version }}">{{ icon('player-play', 'text-xl') }}Start route</button>{% endif %}
+</div></section>{% else %}<section class="panel"><div class="empty-state">{{ icon('route-off', 'empty-state-icon') }}<h2>No active route</h2><p>A dispatched route will appear here automatically.</p></div></section>{% endfor %}
+{% endblock %}

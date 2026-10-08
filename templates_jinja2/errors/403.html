@@ -1,0 +1,15 @@
+{% extends "layouts/error.html" %}
+{% block title %}Permission denied{% endblock %}
+{% block guidance %}
+<div class="notice notice-danger mt-6">
+  <i class="ti ti-lock text-lg mt-0.5" aria-hidden="true"></i>
+  <div>
+    <p class="font-semibold">Your role does not allow this action.</p>
+    <p class="mt-1 font-normal">
+      Access is granted per organization role and per depot scope. A dispatcher
+      cannot manage master data, and a depot-scoped member cannot see records
+      outside the depots assigned to them.
+    </p>
+  </div>
+</div>
+{% endblock %}
