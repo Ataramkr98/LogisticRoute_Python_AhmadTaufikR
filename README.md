@@ -1,4 +1,4 @@
-﻿# RouteOps â€” Logistics Route Optimization
+﻿# RouteOps Logistics Route Optimization
 
 A multi-tenant logistics platform covering order intake, constrained vehicle routing, dispatch,
 driver execution, proof of delivery, live tracking, exception handling and reporting.
